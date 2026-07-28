@@ -56,24 +56,24 @@ class Task:
 
 def load_task(task_dir: str | Path) -> Task:
     d = Path(task_dir).resolve()
-    spec = tomllib.loads((d / "task.toml").read_text())
+    spec = tomllib.loads((d / "task.toml").read_text(encoding="utf-8"))
     target = spec.get("target", {})
 
     kernel_name = spec["kernel_file"]
-    headers = {h: (d / h).read_text() for h in spec.get("header_files", [])}
+    headers = {h: (d / h).read_text(encoding="utf-8") for h in spec.get("header_files", [])}
 
     public_tb_name = spec["public_tb"]
-    public_tb_code = (d / public_tb_name).read_text()
+    public_tb_code = (d / public_tb_name).read_text(encoding="utf-8")
 
     hidden_tb_name = spec.get("hidden_tb", public_tb_name)
     hidden_path = d / "hidden" / hidden_tb_name
     if hidden_path.exists():
-        hidden_tb_code = hidden_path.read_text()
+        hidden_tb_code = hidden_path.read_text(encoding="utf-8")
     else:
         hidden_tb_code = public_tb_code  # fallback: reuse the public bench
 
     ref_path = d / "reference" / kernel_name
-    reference_code = ref_path.read_text() if ref_path.exists() else None
+    reference_code = ref_path.read_text(encoding="utf-8") if ref_path.exists() else None
 
     return Task(
         dir=d,
@@ -87,12 +87,12 @@ def load_task(task_dir: str | Path) -> Task:
         requires_cosim=bool(spec.get("requires_cosim", False)),
         initial_condition=spec.get("initial_condition", ""),
         description=(
-            (d / "description.md").read_text()
+            (d / "description.md").read_text(encoding="utf-8")
             if (d / "description.md").exists()
             else ""
         ),
         kernel_name=kernel_name,
-        kernel_code=(d / kernel_name).read_text(),
+        kernel_code=(d / kernel_name).read_text(encoding="utf-8"),
         headers=headers,
         public_tb_name=public_tb_name,
         public_tb_code=public_tb_code,

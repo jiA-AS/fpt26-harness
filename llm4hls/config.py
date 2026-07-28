@@ -18,7 +18,7 @@ from pathlib import Path
 # Vitis 2025.2 dropped the standalone `vitis_hls` binary: HLS now runs via
 # `vitis-run --mode hls --tcl <script>` (see vitis.py).
 VITIS_HLS_ROOT = Path(
-    os.environ.get("LLM4HLS_VITIS_HLS_ROOT", "/opt/xilinx/2025.2/Vitis")
+    os.environ.get("LLM4HLS_VITIS_HLS_ROOT", "/tools/Xilinx/Vitis/2025.2")
 )
 VITIS_SETTINGS = VITIS_HLS_ROOT / "settings64.sh"
 
