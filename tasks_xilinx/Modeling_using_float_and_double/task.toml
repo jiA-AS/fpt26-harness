@@ -1,0 +1,13 @@
+task_id = "Modeling_using_float_and_double"
+task_type = "optimize"
+difficulty = 3
+top = "double_mul_pow2"
+kernel_file = "double_mul_pow2.cpp"
+header_files = []
+public_tb = "double_mul_pow2_tb.cpp"
+budget = 60
+initial_condition = "Xilinx HLS introductory example: Modeling/using_float_and_double"
+
+[target]
+part = "xcu55c-fsvh2892-2L-e"
+clock_ns = 5.0

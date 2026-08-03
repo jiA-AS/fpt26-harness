@@ -1,0 +1,13 @@
+task_id = "Task_level_Parallelism_handling_deadlock"
+task_type = "structural"
+difficulty = 7
+top = "test"
+kernel_file = "test.cpp"
+header_files = []
+public_tb = "test_tb.cpp"
+budget = 60
+initial_condition = "Xilinx HLS introductory example: Task_level_Parallelism/handling_deadlock"
+
+[target]
+part = "xcu55c-fsvh2892-2L-e"
+clock_ns = 5.0

@@ -65,10 +65,12 @@ tasks_all/probXXX/
 
 转换时注意：bench 里 `main()` 返回值非 0 = 失败（本仓库 csim 按退出码判定）。如果你把 Bench4HLS 的目录结构（`ls` 一个 Prob 文件夹）发给我，我可以直接给你写好批量转换脚本。
 
-## 五、环境：必须在 Vitis 2025.2 下跑
+## 五、环境：Vitis 2025.2 ✅ 已安装
 
-- 你之前装的 Vivado **2018.3 不能用于本比赛**——harness 调的是 `vitis-run --mode hls`（2025.2 起没有独立 `vitis_hls`）。
-- 推荐：WSL2 + Docker，用仓库自带的 `vitis.dockerfile` 建镜像（你 7/22 已经折腾过 WSL docker，直接复用），容器内挂載仓库：
+- Vitis 2025.2 已部署在 WSL2 Ubuntu-24.04（外部移动硬盘 1TB），安装路径：`/tools/Xilinx/Vitis/2025.2/`，环境变量已写入 `~/.bashrc`。
+- 验证命令：`source /tools/Xilinx/Vitis/2025.2/settings64.sh && vitis-run --help`
+- 旧 Vivado 2018.3（D 盘）无需使用——harness 调的是 `vitis-run --mode hls`（2025.2 无独立 `vitis_hls`）。
+- Docker 方式也可用（`vitis.dockerfile`）：
   ```bash
   docker build -f vitis.dockerfile -t fpt26:vitis2025.2 .
   docker run -it --rm -v /mnt/e/FPGA/project/FPT/fpt26-harness:/work -w /work \

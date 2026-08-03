@@ -1,0 +1,13 @@
+task_id = "Interface_axi_stream_to_master"
+task_type = "optimize"
+difficulty = 5
+top = "example"
+kernel_file = "example.cpp"
+header_files = []
+public_tb = "example_tb.cpp"
+budget = 60
+initial_condition = "Xilinx HLS introductory example: Interface/axi_stream_to_master"
+
+[target]
+part = "xcu55c-fsvh2892-2L-e"
+clock_ns = 5.0

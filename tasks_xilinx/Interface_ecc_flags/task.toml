@@ -1,0 +1,13 @@
+task_id = "Interface_ecc_flags"
+task_type = "optimize"
+difficulty = 5
+top = "ecc_flags"
+kernel_file = "ecc_flags.cpp"
+header_files = []
+public_tb = "ecc_flags_tb.cpp"
+budget = 60
+initial_condition = "Xilinx HLS introductory example: Interface/ecc_flags"
+
+[target]
+part = "xcu55c-fsvh2892-2L-e"
+clock_ns = 5.0

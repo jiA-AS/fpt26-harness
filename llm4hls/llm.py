@@ -57,7 +57,8 @@ class OpenRouterClient:
         model: str | None = None,
         api_key: str | None = None,
         temperature: float = 0.2,
-        max_tokens: int = 8192,
+        max_tokens: int = 16384,
+        token_budget: int = 1000000,  # max total tokens per task (competition requirement)
         max_retries: int = 8,
         base_delay: float = 5.0,
         timeout: int = 300,
@@ -75,9 +76,13 @@ class OpenRouterClient:
         self.max_retries = max_retries
         self.base_delay = base_delay
         self.timeout = timeout
-        # audit counters — the batch runner reads these for FINAL_SUMMARY.md
-        self.api_calls = 0       # successful completions
-        self.api_failures = 0    # individual failed attempts (retried)
+        # audit counters
+        self.api_calls = 0
+        self.api_failures = 0
+        self.total_prompt_tokens = 0
+        self.total_completion_tokens = 0
+        self.total_cached_tokens = 0
+        self.token_budget = token_budget
 
     def _post(self, payload: bytes) -> dict:
         req = urllib.request.Request(
@@ -124,6 +129,15 @@ class OpenRouterClient:
                 if not content.strip():
                     raise ValueError("empty completion content")
                 self.api_calls += 1
+                # Track token usage from API response (competition audit)
+                usage = body.get("usage", {})
+                p_tok = usage.get("prompt_tokens", 0)
+                c_tok = usage.get("completion_tokens", 0)
+                self.total_prompt_tokens += p_tok
+                self.total_completion_tokens += c_tok
+                # Track cache hits (system prompt reused across calls)
+                details = usage.get("prompt_tokens_details", {})
+                self.total_cached_tokens += details.get("cached_tokens", 0)
                 return content
             except urllib.error.HTTPError as e:
                 detail = e.read().decode("utf-8", "replace")[:400]

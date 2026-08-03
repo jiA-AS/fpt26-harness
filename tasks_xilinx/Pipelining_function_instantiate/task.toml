@@ -1,0 +1,13 @@
+task_id = "Pipelining_function_instantiate"
+task_type = "optimize"
+difficulty = 5
+top = "top"
+kernel_file = "top.cpp"
+header_files = []
+public_tb = "top_tb.cpp"
+budget = 60
+initial_condition = "Xilinx HLS introductory example: Pipelining/function_instantiate"
+
+[target]
+part = "xcu55c-fsvh2892-2L-e"
+clock_ns = 5.0

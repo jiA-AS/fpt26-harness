@@ -1,0 +1,13 @@
+task_id = "Interface_rom_lookup_table_math"
+task_type = "optimize"
+difficulty = 5
+top = "lookup_math"
+kernel_file = "lookup_math.cpp"
+header_files = []
+public_tb = "lookup_math_tb.cpp"
+budget = 60
+initial_condition = "Xilinx HLS introductory example: Interface/rom_lookup_table_math"
+
+[target]
+part = "xcu55c-fsvh2892-2L-e"
+clock_ns = 5.0

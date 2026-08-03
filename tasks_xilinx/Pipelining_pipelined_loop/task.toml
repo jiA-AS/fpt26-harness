@@ -1,0 +1,13 @@
+task_id = "Pipelining_pipelined_loop"
+task_type = "optimize"
+difficulty = 5
+top = "loop_pipeline"
+kernel_file = "loop_pipeline.cpp"
+header_files = []
+public_tb = "loop_pipeline_tb.cpp"
+budget = 60
+initial_condition = "Xilinx HLS introductory example: Pipelining/pipelined_loop"
+
+[target]
+part = "xcu55c-fsvh2892-2L-e"
+clock_ns = 5.0

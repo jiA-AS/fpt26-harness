@@ -59,6 +59,21 @@ def _extract_code(text: str) -> str | None:
         return stripped + "\n"
     return None
 
+
+def _clean_code(text: str) -> str:
+    """Strip leaked markdown fences from inside code."""
+    text = text.replace("```cpp", "").replace("```c++", "").replace("```c", "").replace("```", "")
+    return text
+
+
+def _fix_truncated(code: str) -> str:
+    """If code has unbalanced braces, try to close them."""
+    open_braces = code.count("{") - code.count("}")
+    if open_braces <= 0:
+        return code
+    return code.rstrip() + "\n" + "}\n" * open_braces
+
+
 def _lat(r: ToolResult) -> int | None:
     if r.report is None:
         return None
@@ -67,6 +82,15 @@ def _lat(r: ToolResult) -> int | None:
         if r.report.latency_worst is not None
         else r.report.latency_avg
     )
+
+def _qhw(r: ToolResult) -> float | None:
+    """Combined latency + resource quality score. Lower is better."""
+    if r.report is None:
+        return None
+    lat = (r.report.latency_worst or r.report.latency_avg or 0)
+    res = r.report.resources
+    rc = res.get("LUT",0)*1.0 + res.get("FF",0)*0.5 + res.get("DSP",0)*50 + res.get("BRAM",0)*100 + res.get("URAM",0)*200
+    return lat + rc * 0.01
 
 class ReferenceAgent:
     def __init__(
@@ -106,15 +130,21 @@ class ReferenceAgent:
 
     def _preflight(self, code: str) -> str | None:
         """Free sanity checks before spending a tool credit.
-        Returns a rejection reason, or None if the code looks submittable."""
+        Returns cleaned code, or rejection reason."""
         if not code or len(code.strip()) < 20:
             return "empty or suspiciously short code"
+        # Auto-clean leaked markdown fences
         if "```" in code:
-            return "markdown fence leaked into the code"
+            code = _clean_code(code)
+            if len(code.strip()) < 20:
+                return "empty after markdown fence removal"
         if self.task.top not in code:
             return f"top-level function '{self.task.top}' is missing"
         if code.count("{") != code.count("}"):
-            return "unbalanced braces (truncated output?)"
+            # Try to auto-fix truncated output
+            code = _fix_truncated(code)
+            if code.count("{") != code.count("}"):
+                return "unbalanced braces (truncated output?)"
         return None
 
     def _ask(
@@ -151,6 +181,8 @@ class ReferenceAgent:
                     "Return the FULL kernel .cpp inside one ```cpp fence."
                 )
                 continue
+            # Auto-clean leaked fences before preflight
+            cand = _clean_code(cand)
             bad = self._preflight(cand)
             if bad is None:
                 return cand
@@ -213,7 +245,7 @@ class ReferenceAgent:
                 return True, code
         return False, code
 
-    def _optimize(self, best: str, best_latency: int | None) -> str:
+    def _optimize(self, best: str, best_qhw: float | None) -> str:
         rounds = 0
         stalls = 0
         while (
@@ -225,10 +257,11 @@ class ReferenceAgent:
             rounds += 1
             fb = (
                 "Current design passes correctness. "
-                f"Best latency so far: {best_latency} cycles."
+                f"Best QHW score so far: {best_qhw:.1f} (lower is better)."
+                if best_qhw is not None else "Current design passes correctness."
             )
             instr = (
-                "Optimize this correct kernel for LOWER latency on the target, "
+                "Optimize this correct kernel for lower QHW score, "
                 "while keeping it functionally correct and synthesizable. Apply "
                 "HLS pragmas (PIPELINE with II=1 where possible, UNROLL, "
                 "ARRAY_PARTITION complete/cyclic, DATAFLOW) and/or restructure "
@@ -250,16 +283,16 @@ class ReferenceAgent:
                 self._log(f"opt round {rounds}: failed synth ({sr.phase}); discard")
                 stalls += 1
                 continue
-            lat = _lat(sr)
-            if best_latency is None or (lat is not None and lat < best_latency):
+            qhw = _qhw(sr)
+            if best_qhw is None or (qhw is not None and qhw < best_qhw):
                 self._log(
-                    f"opt round {rounds}: latency {best_latency} -> {lat}; accept"
+                    f"opt round {rounds}: QHW {best_qhw} -> {qhw}; accept"
                 )
-                best, best_latency = cand, lat
+                best, best_qhw = cand, qhw
             else:
                 self._log(
                     f"opt round {rounds}: no improvement "
-                    f"({best_latency} -> {lat})"
+                    f"({best_qhw} -> {qhw})"
                 )
                 stalls += 1
         return best
@@ -290,15 +323,15 @@ class ReferenceAgent:
                 return code
             best = code  # cosim-verified already, for structural tasks
             verified = best
-            best_latency = None
+            best_qhw = None
             if self._afford("synth"):
                 r = self.server.synth(best)
                 if r.ok:
-                    best_latency = _lat(r)
+                    best_qhw = _qhw(r)
                     self._log(
                         f"baseline synth of correct design: {r.report.summary()}"
                     )
-            best = self._optimize(best, best_latency)
+            best = self._optimize(best, best_qhw)
             # If optimization changed a structural design, confirm it didn't
             # reintroduce a deadlock; revert to the verified version if it did.
             if (

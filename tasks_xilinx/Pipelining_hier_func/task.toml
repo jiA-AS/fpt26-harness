@@ -1,0 +1,13 @@
+task_id = "Pipelining_hier_func"
+task_type = "optimize"
+difficulty = 5
+top = "hier_func4"
+kernel_file = "hier_func4.cpp"
+header_files = []
+public_tb = "hier_func4_tb.cpp"
+budget = 60
+initial_condition = "Xilinx HLS introductory example: Pipelining/hier_func"
+
+[target]
+part = "xcu55c-fsvh2892-2L-e"
+clock_ns = 5.0

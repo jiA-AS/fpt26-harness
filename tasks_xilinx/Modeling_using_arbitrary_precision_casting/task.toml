@@ -1,0 +1,13 @@
+task_id = "Modeling_using_arbitrary_precision_casting"
+task_type = "optimize"
+difficulty = 3
+top = "arbitrary_precision_casting"
+kernel_file = "arbitrary_precision_casting.cpp"
+header_files = []
+public_tb = "arbitrary_precision_casting_tb.cpp"
+budget = 60
+initial_condition = "Xilinx HLS introductory example: Modeling/using_arbitrary_precision_casting"
+
+[target]
+part = "xcu55c-fsvh2892-2L-e"
+clock_ns = 5.0

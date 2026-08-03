@@ -1,0 +1,13 @@
+task_id = "Interface_ram_uram"
+task_type = "optimize"
+difficulty = 5
+top = "resource_uram"
+kernel_file = "resource_uram.cpp"
+header_files = []
+public_tb = "resource_uram_tb.cpp"
+budget = 60
+initial_condition = "Xilinx HLS introductory example: Interface/ram_uram"
+
+[target]
+part = "xcu55c-fsvh2892-2L-e"
+clock_ns = 5.0

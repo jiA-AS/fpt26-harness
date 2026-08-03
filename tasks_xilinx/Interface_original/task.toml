@@ -1,0 +1,13 @@
+task_id = "Interface_original"
+task_type = "optimize"
+difficulty = 5
+top = "array_mem_bottleneck"
+kernel_file = "array_mem_bottleneck.cpp"
+header_files = []
+public_tb = "array_mem_bottleneck_tb.cpp"
+budget = 60
+initial_condition = "Xilinx HLS introductory example: Interface/original"
+
+[target]
+part = "xcu55c-fsvh2892-2L-e"
+clock_ns = 5.0

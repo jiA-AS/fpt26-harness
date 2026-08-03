@@ -1,0 +1,13 @@
+task_id = "Modeling_native_casts"
+task_type = "optimize"
+difficulty = 3
+top = "pointer_cast_native"
+kernel_file = "pointer_cast_native.cpp"
+header_files = []
+public_tb = "pointer_cast_native_tb.cpp"
+budget = 60
+initial_condition = "Xilinx HLS introductory example: Modeling/native_casts"
+
+[target]
+part = "xcu55c-fsvh2892-2L-e"
+clock_ns = 5.0

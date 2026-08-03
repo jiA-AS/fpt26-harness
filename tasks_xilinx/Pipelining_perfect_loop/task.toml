@@ -1,0 +1,13 @@
+task_id = "Pipelining_perfect_loop"
+task_type = "optimize"
+difficulty = 5
+top = "loop_perfect"
+kernel_file = "loop_perfect.cpp"
+header_files = []
+public_tb = "loop_perfect_tb.cpp"
+budget = 60
+initial_condition = "Xilinx HLS introductory example: Pipelining/perfect_loop"
+
+[target]
+part = "xcu55c-fsvh2892-2L-e"
+clock_ns = 5.0

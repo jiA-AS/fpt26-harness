@@ -1,0 +1,13 @@
+task_id = "Task_level_Parallelism_unique_task_regions"
+task_type = "structural"
+difficulty = 7
+top = "top"
+kernel_file = "top.cpp"
+header_files = []
+public_tb = "top_tb.cpp"
+budget = 60
+initial_condition = "Xilinx HLS introductory example: Task_level_Parallelism/unique_task_regions"
+
+[target]
+part = "xcu55c-fsvh2892-2L-e"
+clock_ns = 5.0

@@ -23,7 +23,22 @@
 
 ## 二、正确率杠杆排序（钱花在哪最值）
 
-评分公式：`score = difficulty × (0.5×correct + 0.2×synthesizable + 0.3×ppa_norm)`，**hidden TB 不过 = 0 分**。
+评分公式（源自 `llm4hls/scoring.py`，mirrors HLSTrans）：
+
+```
+score = difficulty × (0.5×correct + 0.2×synthesizable + 0.3×ppa_norm)
+ppa_norm = min(Acceleration, 8) / 8
+Acceleration = baseline_latency / candidate_latency
+```
+
+**hidden TB 不过 = 0 分**——正确性是门槛，PPA 只在通过后才能贡献分数。
+
+PPA 指标（Vitis HLS Synthesis Summary, UG1399）：
+- **Latency**：最坏情况时钟周期数
+- **II**：Initiation Interval（流水线吞吐间隔）
+- **资源**：LUT、FF、DSP、BRAM、URAM
+
+> 📄 任务集来源：Bench4HLS（arXiv:2601.19941, accepted to DATE 2026）——170 个手工验证的 HLS case study，涵盖小 kernel 到复杂加速器，已转换为 `tasks_all/` 格式。
 所以正确率的本质是"让尽可能多的 task 通过隐藏测试台"，杠杆按效力排序：
 
 1. **模型能力（最大杠杆）**：27B → 122B 在截图里差 14 个 task。比赛限制开源模型，选 OpenRouter 上可用的最大开源代码模型（如 Qwen3.5 122B A10B 级别）。*模型 slug 以 OpenRouter 模型列表为准，下面是示例。*
@@ -65,10 +80,12 @@ tasks_all/probXXX/
 
 转换时注意：bench 里 `main()` 返回值非 0 = 失败（本仓库 csim 按退出码判定）。如果你把 Bench4HLS 的目录结构（`ls` 一个 Prob 文件夹）发给我，我可以直接给你写好批量转换脚本。
 
-## 五、环境：必须在 Vitis 2025.2 下跑
+## 五、环境：Vitis 2025.2 ✅ 已安装
 
-- 你之前装的 Vivado **2018.3 不能用于本比赛**——harness 调的是 `vitis-run --mode hls`（2025.2 起没有独立 `vitis_hls`）。
-- 推荐：WSL2 + Docker，用仓库自带的 `vitis.dockerfile` 建镜像（你 7/22 已经折腾过 WSL docker，直接复用），容器内挂載仓库：
+- Vitis 2025.2 已部署在 WSL2 Ubuntu-24.04（外部移动硬盘 1TB），安装路径：`/tools/Xilinx/Vitis/2025.2/`，环境变量已写入 `~/.bashrc`。
+- 验证命令：`source /tools/Xilinx/Vitis/2025.2/settings64.sh && vitis-run --help`
+- 旧 Vivado 2018.3（D 盘）无需使用——harness 调的是 `vitis-run --mode hls`（2025.2 无独立 `vitis_hls`）。
+- Docker 方式也可用（`vitis.dockerfile`）：
   ```bash
   docker build -f vitis.dockerfile -t fpt26:vitis2025.2 .
   docker run -it --rm -v /mnt/e/FPGA/project/FPT/fpt26-harness:/work -w /work \
@@ -104,13 +121,85 @@ python scripts/run_batch.py --tasks-dir tasks_all \
 | 冲总分 | 10 | 5~8 | ≥80 | synth=4 credit，优化轮多花时间 |
 | 快速验证 | 5 | 2 | 40 | 调 prompt 时用 |
 
-## 七、合规红线（比赛规则）
+## 七、合规红线（官方规则）
 
-- **只能用开源模型**（contest rule），DeepSeek-V4 / Qwen3 系列都是 open-weight，合规；不要接 GPT/Claude/Gemini。
-- 官方建议把 **token 预算 / 时间上限做成可配置参数**（评测方会强制执行合理上限）。run_batch 的 `--budget` + agent 的轮数上限就是这个参数，答辩/论文里写明。
-- 评测方可能用**自己的 hidden testbench** 跑你的 agent，不要针对公开 tb 过拟合（prompt 里我已强调"不要 hack 测试台"）。
+> 来源：[FPT'26 Design Competition](https://fpt2026.uark.edu/fpt26-design-competition/)
 
-## 八、预期效果
+**模型限制**
+- 开源模型 only，DeepSeek-V4 / Qwen3 系列 open-weight，合规
+- 不要接 GPT/Claude/Gemini
+
+**任务要求**
+Track A 初始条件涵盖（但不限于）：
+- 编译/cosim 失败 → `repair`
+- 功能正确但未优化 → `optimize`
+- 综合失败 → `synth_fix`
+- 空骨架 → `generate`
+
+**预算约束**
+- csim=1, synth=4, cosim=20 credits
+- Agent 必须在预算内终止
+- Token/时间上限做成可配置参数
+
+**提交要求**
+- 2 页 IEEE 双栏论文 + 5 分钟视频
+- 入围需到 FPT 2026 现场演示
+
+**评分标准**
+- 技术 40% + 创新 20% + 实践 20% + 展示 20%
+- 评测方可能用自己的 hidden testbench
+
+**合规清单**
+- [x] Vitis 2025.2 + U55C + 200MHz
+- [x] 开源模型 only
+- [x] Token/时间预算可配
+- [x] 正确性优先 PPA
+- [x] Agent 只改 kernel.cpp
+- [x] 覆盖 generate/optimize/repair
+- [ ] 论文 + 视频（待做）
+
+## 八、核心优化策略（参考 Top 团队）
+
+> 来源：第1组「工具验证型HLS优化智能体」+ 第4组「预算感知闭环修复与优化Agent」
+
+### 1. QHW 硬件质量评分（替代纯 Latency 比较）
+
+当前 agent 只看 latency 决定是否接受候选。Top 团队引入综合质量指标：
+Q_HW = f(latency, LUT, FF, DSP, Fmax)
+仅当 Q_HW 严格优于当前 best-so-far 才晋升（promote）。
+避免"更快但炸资源"的劣化解被接受。
+
+### 2. 状态机驱动（替代自由对话）
+
+- CSIM_FAILED → 只修 bug，不跑优化
+- CORRECT_UNOPTIMIZED → 进入性能优化
+- COSIM_FAILED → 定位死锁/背压
+- OPTIMIZED → 冻结候选
+
+### 3. Rule + LLM 混合 Planner
+
+- Rule Planner：语法错误、接口错误、已知死锁模式、基础优化（CSD/MCM/CSE）
+- LLM Planner：复杂推理、未知失败、复杂算术重构
+- Rule 节省 API 调用，LLM 兜底复杂场景
+
+### 4. 三层硬件优化知识库
+
+- Architecture：Pipeline、Unroll、Array Partition → 吞吐/并行
+- Arithmetic：CSD + MCM + CSE（常量→移位加法）→ DSP 节省
+- Data：位宽优化（ap_int/ap_fixed）→ 面积缩减
+
+### 5. 预算感知分层验证
+
+G1 CSim (1cr) → 功能正确才进综合
+G2 Synth (4cr) → 解析 latency/II/Fmax/resource
+G3 CoSim (20cr) → 仅对结构风险或最终候选运行
+G4 Selection → Pareto + 加速比 + 资源取舍
+
+### 6. Action Schema（约束修改）
+
+用 JSON Schema 限定修改类型、目标文件、匹配次数，非法动作在进入工具前被拒绝。保护顶层签名、头文件、testbench。
+
+## 九、预期效果
 
 - 基建补齐后（重试+补跑+preflight+精准反馈），同一模型预计提升 **5~15 个 task**——API 异常和 malformed 回复不再白丢分。
 - 132/150（27B）→ 146+/150（122B 级模型）的差距主要靠换模型补齐。

@@ -1,0 +1,13 @@
+task_id = "Task_level_Parallelism_simple_data_driven"
+task_type = "structural"
+difficulty = 7
+top = "odds_and_evens"
+kernel_file = "odds_and_evens.cpp"
+header_files = []
+public_tb = "odds_and_evens_tb.cpp"
+budget = 60
+initial_condition = "Xilinx HLS introductory example: Task_level_Parallelism/simple_data_driven"
+
+[target]
+part = "xcu55c-fsvh2892-2L-e"
+clock_ns = 5.0

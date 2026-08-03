@@ -1,0 +1,13 @@
+task_id = "DSP_interface_stream"
+task_type = "optimize"
+difficulty = 7
+top = "fft_top"
+kernel_file = "fft_top.cpp"
+header_files = []
+public_tb = "fft_top_tb.cpp"
+budget = 60
+initial_condition = "Xilinx HLS introductory example: DSP/interface_stream"
+
+[target]
+part = "xcu55c-fsvh2892-2L-e"
+clock_ns = 5.0

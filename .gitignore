@@ -1,4 +1,11 @@
 runs/
+runs_batch/
+tasks_all/
+tasks_test/
 __pycache__/
 *.pyc
 .venv/
+*.vhdx
+*.tar
+*.bin
+.vscode/

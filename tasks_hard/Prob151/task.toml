@@ -1,0 +1,13 @@
+task_id = "Prob151"
+task_type = "optimize"
+difficulty = 7
+top = "TopModule"
+kernel_file = "TopModule.cpp"
+header_files = ["TopModule.h"]
+public_tb = "TopModule_tb.cpp"
+budget = 60
+initial_condition = "Correct but unoptimized — HLS pragmas stripped."
+
+[target]
+part = "xcu55c-fsvh2892-2L-e"
+clock_ns = 5.0
