@@ -16,8 +16,7 @@ from __future__ import annotations
 
 import json
 import time
-import urllib.error
-import urllib.request
+import requests
 from typing import Protocol
 
 from . import config
@@ -84,77 +83,76 @@ class OpenRouterClient:
         self.total_cached_tokens = 0
         self.token_budget = token_budget
 
-    def _post(self, payload: bytes) -> dict:
-        req = urllib.request.Request(
+    def _post(self, json_data: dict) -> dict:
+        resp = requests.post(
             self.base_url,
-            data=payload,
+            data=json.dumps(json_data, ensure_ascii=True).encode("utf-8"),
             headers={
                 "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
+                "Content-Type": "application/json; charset=utf-8",
                 "HTTP-Referer": "https://llm4hls.local",
                 "X-Title": "LLM4HLS Track A",
             },
-            method="POST",
+            timeout=self.timeout,
         )
-        with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-            return json.loads(resp.read().decode("utf-8"))
+        resp.raise_for_status()
+        return resp.json()
 
     def complete(
         self, system: str, user: str, temperature: float | None = None
     ) -> str:
-        payload = json.dumps(
-            {
-                "model": self.model,
-                "messages": [
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": user},
-                ],
-                "temperature": (
-                    temperature if temperature is not None else self.temperature
-                ),
-                "max_tokens": self.max_tokens,
-            }
-        ).encode("utf-8")
+        json_data = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            "temperature": (
+                temperature if temperature is not None else self.temperature
+            ),
+            "max_tokens": self.max_tokens,
+        }
 
         last_err = "unknown"
         for attempt in range(self.max_retries):
             try:
-                body = self._post(payload)
+                body = self._post(json_data)
                 msg = body["choices"][0]["message"]
                 content = msg.get("content") or ""
-                if isinstance(content, list):  # some providers return parts
+                if isinstance(content, list):
                     content = "".join(
                         p.get("text", "") for p in content if isinstance(p, dict)
                     )
                 if not content.strip():
                     raise ValueError("empty completion content")
                 self.api_calls += 1
-                # Track token usage from API response (competition audit)
                 usage = body.get("usage", {})
                 p_tok = usage.get("prompt_tokens", 0)
                 c_tok = usage.get("completion_tokens", 0)
                 self.total_prompt_tokens += p_tok
                 self.total_completion_tokens += c_tok
-                # Track cache hits (system prompt reused across calls)
                 details = usage.get("prompt_tokens_details", {})
                 self.total_cached_tokens += details.get("cached_tokens", 0)
                 return content
-            except urllib.error.HTTPError as e:
-                detail = e.read().decode("utf-8", "replace")[:400]
-                last_err = f"HTTP {e.code}: {detail}"
-                if e.code not in self.RETRY_STATUS:
-                    # 4xx other than rate limits = our fault, fail fast
+            except requests.exceptions.HTTPError as e:
+                code = e.response.status_code if e.response is not None else 0
+                detail = str(e)[:400]
+                last_err = f"HTTP {code}: {detail}"
+                if code not in self.RETRY_STATUS:
                     raise RuntimeError(f"OpenRouter {last_err}") from e
                 self.api_failures += 1
             except (
-                urllib.error.URLError,
-                TimeoutError,
-                ConnectionError,
+                requests.exceptions.ConnectionError,
+                requests.exceptions.Timeout,
+                requests.exceptions.RequestException,
                 json.JSONDecodeError,
                 KeyError,
                 IndexError,
                 ValueError,
+                UnicodeError,
             ) as e:
+                import traceback
+                traceback.print_exc()
                 last_err = f"{type(e).__name__}: {e}"
                 self.api_failures += 1
 

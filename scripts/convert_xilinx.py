@@ -66,33 +66,50 @@ def convert():
             task_dir.mkdir(parents=True, exist_ok=True)
             top = info["top"]
 
-            # Copy kernel files
+            # Copy all source files (preserve original names)
+            kernel_file = ""
+            header_files = []
             for kf in info["kernels"]:
                 src = ex_dir / kf
-                if src.exists():
-                    shutil.copy(src, task_dir / f"{top}.cpp")
-                    # Also copy matching .h
-                    for h in ex_dir.glob("*.h"):
-                        shutil.copy(h, task_dir / h.name)
+                if src.exists() and src.is_file():
+                    shutil.copy(src, task_dir / kf)
+                    if not kernel_file:
+                        kernel_file = kf  # first kernel file is the main one
+            # Copy all headers
+            for h in ex_dir.glob("*.h"):
+                if h.is_file():
+                    shutil.copy(h, task_dir / h.name)
+                    header_files.append(h.name)
 
-            # Copy testbench
+            # Copy testbench + data directory
+            tb_file = ""
             for tb in info["tb"]:
                 src = ex_dir / tb
                 if src.exists() and src.is_file():
-                    shutil.copy(src, task_dir / f"{top}_tb.cpp")
+                    shutil.copy(src, task_dir / tb)
+                    if not tb_file:
+                        tb_file = tb
+            # Copy data directory if exists (needed by some DSP examples)
+            data_dir = ex_dir / "data"
+            if data_dir.is_dir():
+                shutil.copytree(data_dir, task_dir / "data", dirs_exist_ok=True)
+
+            if not kernel_file:
+                continue
 
             # Description from README
             readme = ex_dir / "README"
             desc = readme.read_text(encoding="utf-8", errors="ignore")[:500] if readme.exists() else cat_name
 
             # task.toml
+            hdr_list = str(header_files).replace("'", '"')
             toml = f"""task_id = "{task_id}"
 task_type = "{task_type}"
 difficulty = {diff}
 top = "{top}"
-kernel_file = "{top}.cpp"
-header_files = []
-public_tb = "{top}_tb.cpp"
+kernel_file = "{kernel_file}"
+header_files = {hdr_list}
+public_tb = "{tb_file}"
 budget = 60
 initial_condition = "Xilinx HLS introductory example: {cat_name}/{ex_dir.name}"
 

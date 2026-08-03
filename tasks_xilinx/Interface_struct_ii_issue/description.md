@@ -1,6 +1,0 @@
-This example illustrates the effect of misaligned data in the interface. Struct A defined in example.h has a 
-size of 192 bits / 24 Bytes. As the port is defined as m_axi, Vitis HLS will pad this field to the closest 
-power of 2 - which is 256 bits (or 32 bytes). This causes a mismatch in the software and hardware sizes and
-results in II violations in the two loops that read and write to the m_axi interfaces.
-
-Edit example.h to uncomment the line that sizes the struct to a power of 2. Rerun and 

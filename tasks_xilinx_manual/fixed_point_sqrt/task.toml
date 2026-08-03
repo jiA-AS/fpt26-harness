@@ -1,0 +1,13 @@
+task_id = "fixed_point_sqrt"
+task_type = "optimize"
+difficulty = 5
+top = "fxp_sqrt_top"
+kernel_file = "fxp_sqrt_top.cpp"
+header_files = ["fxp_sqrt_top.h", "fxp_sqrt.h"]
+public_tb = "fxp_sqrt_test.cpp"
+budget = 60
+initial_condition = "Correct but unoptimized - all HLS pragmas removed"
+
+[target]
+part = "xcu55c-fsvh2892-2L-e"
+clock_ns = 5.0
