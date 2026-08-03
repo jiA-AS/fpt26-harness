@@ -83,6 +83,11 @@ tasks_all/probXXX/
 ## 五、环境：Vitis 2025.2 ✅ 已安装
 
 - Vitis 2025.2 已部署在 WSL2 Ubuntu-24.04（外部移动硬盘 1TB），安装路径：`/tools/Xilinx/Vitis/2025.2/`，环境变量已写入 `~/.bashrc`。
+- ⚠️ **API Key 不要写进任何 md/cfg 文件（会被 git 泄露）**，只在终端设置：
+  ```bash
+  echo 'export OPENROUTER_API_KEY=sk-or-v1-你的key' >> ~/.bashrc
+  source ~/.bashrc
+  ```
 - 验证命令：`source /tools/Xilinx/Vitis/2025.2/settings64.sh && vitis-run --help`
 - 旧 Vivado 2018.3（D 盘）无需使用——harness 调的是 `vitis-run --mode hls`（2025.2 无独立 `vitis_hls`）。
 - Docker 方式也可用（`vitis.dockerfile`）：
